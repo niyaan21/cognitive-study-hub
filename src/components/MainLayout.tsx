@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +18,7 @@ import {
   ArrowDown,
   Book,
   X,
+  Brain,
 } from "lucide-react";
 import { StudySession } from '@/services/storageService';
 import { ThemeToggle } from './ThemeToggle';
@@ -180,7 +182,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 >
                   <MessageCircle className="h-4 w-4" />
                   <span>AI Chat</span>
-                  <span className="ml-auto bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">New</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
@@ -189,6 +190,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 >
                   <ArrowUp className="h-4 w-4" />
                   <span>Flashcards</span>
+                </TabsTrigger>
+                
+                <TabsTrigger 
+                  value="spaced-rep" 
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  <Brain className="h-4 w-4" />
+                  <span>Spaced Repetition</span>
+                  <span className="ml-auto bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">New</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
@@ -228,6 +238,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           />
         )}
       </div>
+      
+      <Tutorial open={isTutorialOpen} onOpenChange={setIsTutorialOpen} />
     </div>
   );
 };

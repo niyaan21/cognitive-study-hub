@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ApiKeySetup from '@/components/ApiKeySetup';
 import MainLayout from '@/components/MainLayout';
@@ -8,6 +7,7 @@ import AiChat from '@/components/AiChat';
 import WebpageBrowser from '@/components/WebpageBrowser';
 import NoteTaking from '@/components/NoteTaking';
 import Flashcards from '@/components/Flashcards';
+import SpacedRepetition from '@/components/SpacedRepetition';
 import Translation from '@/components/Translation';
 import ImageOcr from '@/components/ImageOcr';
 import Summarize from '@/components/Summarize';
@@ -208,6 +208,21 @@ const Index = () => {
             </div>
             <div className="mt-8">
               <Flashcards material={activeMaterial} />
+            </div>
+          </div>
+        );
+
+      case 'spaced-rep':
+        return (
+          <div className={contentClasses}>
+            <div className="max-w-2xl space-y-2">
+              <h1 className={headingClasses}>Smart Spaced Repetition</h1>
+              <p className={descriptionClasses}>
+                Review material at scientifically optimized intervals to maximize long-term retention.
+              </p>
+            </div>
+            <div className="mt-8">
+              <SpacedRepetition material={activeMaterial} />
             </div>
           </div>
         );
