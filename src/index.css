@@ -53,14 +53,45 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground antialiased;
+  html {
+    @apply scroll-smooth antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
 
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Mobile-friendly focus states */
+  @media (max-width: 768px) {
+    :focus {
+      outline: none;
+    }
+    
+    :focus-visible {
+      @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+    }
+  }
+
+  /* Improved touch targets on mobile */
+  @media (max-width: 768px) {
+    button, a, [role="button"] {
+      @apply min-h-[44px] min-w-[44px];
+    }
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar {
+    @apply scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted hover:scrollbar-thumb-muted-foreground;
+  }
+
+  /* Glass effect */
   .glass-panel {
     @apply backdrop-blur-xl bg-background/50 border border-border/50 shadow-lg;
   }
 
+  /* Animations */
   .animate-in {
     animation: animate-in 0.5s ease-out;
   }
@@ -75,5 +106,8 @@
       transform: translateY(0);
     }
   }
-}
 
+  .fade-in {
+    @apply motion-safe:animate-in;
+  }
+}

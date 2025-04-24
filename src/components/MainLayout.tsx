@@ -5,18 +5,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  Book,
-  FileText,
+  BookOpen,
+  MessageCircle,
+  Menu,
   Upload,
   Search,
   Image,
   Pencil,
   ArrowUp,
   ArrowDown,
-  BookOpen,
-  MessageCircle,
-  Menu,
+  Book,
 } from "lucide-react";
 import { StudySession } from '@/services/storageService';
 import { ThemeToggle } from './ThemeToggle';
@@ -35,31 +35,35 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   activeTab,
 }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="container flex h-14 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-2 md:gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="lg:hidden"
+              className="md:hidden"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-              <BookOpen className="h-6 w-6 text-primary" />
-              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+            <h1 className="flex items-center gap-2 text-xl md:text-2xl font-bold tracking-tight">
+              <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent hidden sm:inline-block">
                 AI Study Hub
+              </span>
+              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent sm:hidden">
+                Hub
               </span>
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {activeSession && (
-              <Badge variant="secondary" className="px-4 py-1 text-sm">
+              <Badge variant="secondary" className="hidden md:flex px-4 py-1 text-sm">
                 {activeSession.name}
               </Badge>
             )}
@@ -69,12 +73,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       </header>
 
       {/* Main Content */}
-      <div className="container flex min-h-[calc(100vh-4rem)] gap-6 py-6">
+      <div className="flex min-h-[calc(100vh-3.5rem)] relative">
         {/* Sidebar */}
-        <aside className={`fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-64 shrink-0 border-r glass-panel transition-all duration-300 lg:sticky ${
-          isSidebarCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0'
-        }`}>
-          <ScrollArea className="h-full py-6 pl-8 pr-6">
+        <aside className={`fixed inset-y-14 left-0 z-30 w-64 transform transition-transform duration-300 lg:relative lg:inset-y-0 lg:translate-x-0 ${
+          isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0'
+        } border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
+          <ScrollArea className="h-full py-6 pl-4 pr-2">
             <Tabs
               defaultValue={activeTab}
               value={activeTab}
@@ -85,68 +89,68 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               <TabsList className="flex h-auto flex-col items-start gap-1 bg-transparent">
                 <TabsTrigger 
                   value="upload" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <Upload className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>Upload Material</span>
+                  <span>Upload Material</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
                   value="browser" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <Search className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>Browse Webpage</span>
+                  <span>Browse Webpage</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
                   value="ocr" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <Image className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>OCR Image</span>
+                  <span>OCR Image</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
                   value="notes" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <Pencil className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>Notes</span>
+                  <span>Notes</span>
                 </TabsTrigger>
 
                 <Separator className="my-4" />
                 
                 <TabsTrigger 
                   value="library" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <Book className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>Study Library</span>
+                  <span>Study Library</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
                   value="chat" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>AI Chat</span>
+                  <span>AI Chat</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
                   value="flashcards" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <ArrowUp className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>Flashcards</span>
+                  <span>Flashcards</span>
                 </TabsTrigger>
                 
                 <TabsTrigger 
                   value="summarize" 
-                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <ArrowDown className="h-4 w-4" />
-                  <span className={isSidebarCollapsed ? 'lg:hidden' : ''}>Summarize</span>
+                  <span>Summarize</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -154,12 +158,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </aside>
 
         {/* Content Area */}
-        <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-0'}`}>
-          <div className="h-full rounded-xl glass-panel p-6 animate-in">
-            {children}
+        <main className="flex-1 overflow-auto">
+          <div className="container px-4 py-6 md:px-6 md:py-8">
+            <div className="rounded-lg border bg-card p-4 md:p-6">
+              {children}
+            </div>
           </div>
         </main>
       </div>
+
+      {/* Mobile Overlay */}
+      {!isSidebarCollapsed && !isMobile && (
+        <div
+          className="fixed inset-0 z-20 bg-background/80 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsSidebarCollapsed(true)}
+        />
+      )}
     </div>
   );
 };
