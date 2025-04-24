@@ -33,7 +33,11 @@ const tutorialSteps: TutorialStep[] = [
   },
   {
     title: "Smart Spaced Repetition",
-    description: "Our AI-powered spaced repetition system tracks your learning progress and schedules review sessions at optimal intervals to maximize long-term retention.",
+    description: "Our AI-powered spaced repetition system tracks your learning progress and schedules review sessions at optimal intervals to maximize long-term retention. The system uses a scientifically-proven algorithm that adjusts the timing of reviews based on how well you remember each card.",
+  },
+  {
+    title: "Flashcards & Active Recall",
+    description: "Create or auto-generate flashcards from your study materials. Rate your confidence after each card review, and our system will adjust the review schedule accordingly. Cards you find difficult will appear more frequently until you master them.",
   },
   {
     title: "Study Library",

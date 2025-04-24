@@ -1,365 +1,631 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, CheckCircle, XCircle, Calendar, Brain, Trophy } from "lucide-react";
-import { openRouterService } from '@/services/openRouterService';
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
 import { StudyMaterial } from '@/services/fileProcessorService';
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { spacedRepetitionService, FlashCard } from '@/services/spacedRepetitionService';
+import { toast } from "@/components/ui/sonner";
+import { Brain, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Loader2, Star, Zap } from "lucide-react";
 
 interface SpacedRepetitionProps {
   material: StudyMaterial | null;
 }
 
-interface FlashcardWithMetadata {
-  question: string;
-  answer: string;
-  difficulty: number; // 1-5 scale
-  nextReview: Date;
-  interval: number; // days until next review
-  reviewCount: number;
-}
-
 const SpacedRepetition: React.FC<SpacedRepetitionProps> = ({ material }) => {
-  const [flashcards, setFlashcards] = useState<FlashcardWithMetadata[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [reviewMode, setReviewMode] = useState<'all' | 'due'>('due');
-  const [stats, setStats] = useState({
-    mastered: 0,
-    learning: 0,
-    difficult: 0,
-    dueToday: 0,
-  });
+  const [activeTab, setActiveTab] = useState<string>("review");
+  const [flashcards, setFlashcards] = useState<FlashCard[]>([]);
+  const [dueCards, setDueCards] = useState<FlashCard[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
+  const [isFlipped, setIsFlipped] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [reviewInProgress, setReviewInProgress] = useState<boolean>(false);
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [cardsCompleted, setCardsCompleted] = useState<number>(0);
+  
+  // Calendar states
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [upcomingReviews, setUpcomingReviews] = useState<{[key: string]: number}>({});
 
-  // Generate or load flashcards when material changes
   useEffect(() => {
-    if (material && flashcards.length === 0) {
-      generateFlashcards();
+    if (material) {
+      loadFlashcards();
+    } else {
+      setFlashcards([]);
+      setDueCards([]);
     }
   }, [material]);
 
-  // Calculate stats whenever flashcards change
   useEffect(() => {
-    if (flashcards.length > 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const newStats = {
-        mastered: flashcards.filter(card => card.difficulty <= 2).length,
-        learning: flashcards.filter(card => card.difficulty === 3).length,
-        difficult: flashcards.filter(card => card.difficulty >= 4).length,
-        dueToday: flashcards.filter(card => {
-          const reviewDate = new Date(card.nextReview);
-          reviewDate.setHours(0, 0, 0, 0);
-          return reviewDate <= today;
-        }).length,
-      };
-      
-      setStats(newStats);
-    }
+    // Calculate upcoming reviews
+    const upcoming: {[key: string]: number} = {};
+    flashcards.forEach(card => {
+      const dateStr = card.nextReviewDate.toISOString().split('T')[0];
+      upcoming[dateStr] = (upcoming[dateStr] || 0) + 1;
+    });
+    setUpcomingReviews(upcoming);
   }, [flashcards]);
 
-  const generateFlashcards = async () => {
+  const loadFlashcards = () => {
     if (!material) return;
+    
+    const allCards = spacedRepetitionService.getFlashcards(material.id);
+    setFlashcards(allCards);
+    
+    const due = spacedRepetitionService.getDueFlashcards(material.id);
+    setDueCards(due);
+  };
 
-    setIsGenerating(true);
+  const handleGenerateFlashcards = async () => {
+    if (!material) {
+      toast.error("No study material selected");
+      return;
+    }
+    
     try {
-      const generatedCards = await openRouterService.generateFlashcards(material.content);
+      setIsGenerating(true);
+      const newCards = await spacedRepetitionService.generateFlashcardsFromMaterial(material.id, material.content);
       
-      // Add spaced repetition metadata to each card
-      const cardsWithMetadata: FlashcardWithMetadata[] = generatedCards.map(card => ({
-        ...card,
-        difficulty: 3, // Start at medium difficulty
-        nextReview: new Date(), // Due immediately
-        interval: 1, // Start with 1-day interval
-        reviewCount: 0,
-      }));
+      toast.success(`Generated ${newCards.length} flashcards`, {
+        description: "Ready for review",
+      });
       
-      setFlashcards(cardsWithMetadata);
-      setCurrentIndex(0);
-      setIsFlipped(false);
-      toast.success("Flashcards generated with spaced repetition tracking");
+      loadFlashcards();
     } catch (error) {
-      console.error('Error generating flashcards:', error);
-      toast.error("Failed to generate flashcards");
+      console.error("Error generating flashcards:", error);
+      toast.error("Failed to generate flashcards", {
+        description: "Please try again later",
+      });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleRating = (difficulty: number) => {
-    if (flashcards.length === 0) return;
-
-    // Create a copy of the flashcards
-    const updatedFlashcards = [...flashcards];
-    const currentCard = updatedFlashcards[currentIndex];
-    
-    // Update the current card's metadata
-    currentCard.difficulty = difficulty;
-    currentCard.reviewCount += 1;
-    
-    // Calculate new interval using SM-2 algorithm (simplified)
-    let newInterval = currentCard.interval;
-    if (difficulty <= 2) { // Easy
-      newInterval = Math.max(currentCard.interval * 2, 1);
-    } else if (difficulty === 3) { // Medium
-      newInterval = Math.max(currentCard.interval + 1, 1);
-    } else { // Hard
-      newInterval = 1; // Reset to 1 day
+  const startReviewSession = () => {
+    if (dueCards.length === 0) {
+      toast.info("No cards due for review");
+      return;
     }
     
-    // Set next review date
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newInterval);
-    currentCard.nextReview = nextReview;
-    currentCard.interval = newInterval;
-    
-    // Update state
-    setFlashcards(updatedFlashcards);
-    
-    // Toast feedback
-    if (difficulty <= 2) {
-      toast.success("Great job! This card will be shown again in " + newInterval + " days");
-    } else if (difficulty === 3) {
-      toast.info("You'll review this card again in " + newInterval + " days");
-    } else {
-      toast.info("We'll review this again tomorrow to help you remember");
-    }
-    
-    // Move to next card
-    moveToNextCard();
-  };
-
-  const moveToNextCard = () => {
-    // Find the next card based on review mode
-    if (reviewMode === 'due') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Find the next due card after current index
-      let nextIndex = -1;
-      for (let i = currentIndex + 1; i < flashcards.length; i++) {
-        const reviewDate = new Date(flashcards[i].nextReview);
-        reviewDate.setHours(0, 0, 0, 0);
-        if (reviewDate <= today) {
-          nextIndex = i;
-          break;
-        }
-      }
-      
-      // If not found, look from the beginning
-      if (nextIndex === -1) {
-        for (let i = 0; i < currentIndex; i++) {
-          const reviewDate = new Date(flashcards[i].nextReview);
-          reviewDate.setHours(0, 0, 0, 0);
-          if (reviewDate <= today) {
-            nextIndex = i;
-            break;
-          }
-        }
-      }
-      
-      // If still not found, there are no more due cards
-      if (nextIndex === -1) {
-        toast.success("You've completed all due cards for today!");
-        return;
-      }
-      
-      setCurrentIndex(nextIndex);
-    } else {
-      // In all mode, just move to next or loop back
-      setCurrentIndex((prev) => (prev + 1) % flashcards.length);
-    }
-    
+    setReviewInProgress(true);
+    setCurrentCardIndex(0);
     setIsFlipped(false);
+    setCardsCompleted(0);
+    setSessionStartTime(Date.now());
   };
 
-  const renderDifficultyBadge = (difficulty: number) => {
-    if (difficulty <= 2) return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
-    if (difficulty === 3) return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Learning</Badge>
-    return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Difficult</Badge>
-  };
-
-  const calculateMasteryPercentage = () => {
-    if (flashcards.length === 0) return 0;
-    return Math.round((stats.mastered / flashcards.length) * 100);
-  };
-
-  const getDueCards = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const endReviewSession = () => {
+    if (sessionStartTime && cardsCompleted > 0) {
+      const duration = Math.round((Date.now() - sessionStartTime) / 1000); // in seconds
+      spacedRepetitionService.recordSession({
+        materialId: material?.id || '',
+        cardsCompleted,
+        totalCards: dueCards.length,
+        duration
+      });
+      
+      toast.success("Review session completed", {
+        description: `You reviewed ${cardsCompleted} cards in ${formatDuration(duration)}`,
+      });
+    }
     
-    return flashcards.filter(card => {
-      const reviewDate = new Date(card.nextReview);
-      reviewDate.setHours(0, 0, 0, 0);
-      return reviewDate <= today;
+    setReviewInProgress(false);
+    setSessionStartTime(null);
+    loadFlashcards(); // Refresh card data
+  };
+
+  const handleCardFlip = () => {
+    setIsFlipped(!isFlipped);
+  };
+
+  const handleCardReview = (score: number) => {
+    if (currentCardIndex >= dueCards.length) return;
+    
+    const currentCard = dueCards[currentCardIndex];
+    spacedRepetitionService.reviewFlashcard(currentCard.id, score);
+    
+    setCardsCompleted(prev => prev + 1);
+    
+    if (currentCardIndex < dueCards.length - 1) {
+      setCurrentCardIndex(currentCardIndex + 1);
+      setIsFlipped(false);
+    } else {
+      endReviewSession();
+    }
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
     });
+  };
+
+  // Function to get review dates with card counts
+  const getDatesWithReviews = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return upcomingReviews[dateStr] || 0;
   };
 
   if (!material) {
     return (
-      <div className="text-center p-6">
-        <p>Please select a study material to start spaced repetition practice.</p>
+      <div className="flex flex-col items-center justify-center space-y-4 p-8">
+        <Brain className="h-16 w-16 text-muted-foreground/50" />
+        <h2 className="text-xl font-semibold">Select Study Material</h2>
+        <p className="text-muted-foreground text-center max-w-md">
+          Please select a study material from your library to start spaced repetition learning.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Spaced Repetition</h2>
-          <p className="text-muted-foreground">Review cards at optimal intervals to maximize retention</p>
+          <p className="text-muted-foreground">
+            Review {material.name} using scientifically optimized intervals
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setReviewMode('due')} variant={reviewMode === 'due' ? "default" : "outline"} size="sm">
-            Due Today ({stats.dueToday})
-          </Button>
-          <Button onClick={() => setReviewMode('all')} variant={reviewMode === 'all' ? "default" : "outline"} size="sm">
-            All Cards
-          </Button>
-          <Button onClick={generateFlashcards} variant="outline" size="sm" disabled={isGenerating}>
-            Regenerate
+        
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={handleGenerateFlashcards}
+            disabled={isGenerating}
+            className="flex items-center gap-2"
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4" />
+            )}
+            Generate Flashcards
           </Button>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="md:col-span-2 h-full">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex justify-between items-center">
-              <span>Flashcard Review</span>
-              {flashcards.length > 0 && (
-                renderDifficultyBadge(flashcards[currentIndex].difficulty)
-              )}
-            </CardTitle>
-            <CardDescription>
-              {reviewMode === 'due' ? 'Reviewing due cards' : 'Reviewing all cards'}
-            </CardDescription>
-          </CardHeader>
-          {isGenerating ? (
-            <CardContent className="min-h-[300px] flex items-center justify-center">
-              <div className="space-y-4 w-full">
-                <Skeleton className="h-8 w-[80%] mx-auto" />
-                <Skeleton className="h-4 w-[60%] mx-auto" />
-                <div className="text-center text-sm text-muted-foreground mt-4">
-                  Generating spaced repetition cards...
-                </div>
-              </div>
-            </CardContent>
-          ) : flashcards.length > 0 ? (
-            <>
-              <CardContent className="min-h-[300px]">
-                <Card
-                  className="min-h-[250px] cursor-pointer border-dashed hover:border-primary/50 transition-colors"
-                  onClick={() => setIsFlipped(!isFlipped)}
-                >
-                  <CardContent className="p-6 flex items-center justify-center text-center">
-                    <div className="text-lg">
-                      {isFlipped 
-                        ? flashcards[currentIndex].answer 
-                        : flashcards[currentIndex].question}
-                    </div>
-                  </CardContent>
-                </Card>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-4">
-                <div className="text-sm text-muted-foreground flex items-center justify-between w-full">
-                  <span>Card {currentIndex + 1} of {flashcards.length}</span>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      Next review: {isFlipped ? new Date(flashcards[currentIndex].nextReview).toLocaleDateString() : '?'}
-                    </span>
-                  </div>
-                </div>
-                
-                {isFlipped && (
-                  <div className="w-full grid grid-cols-4 gap-2">
-                    <Button onClick={() => handleRating(1)} variant="outline" className="border-2 border-green-500/50 hover:bg-green-500/20">
-                      Easy
-                    </Button>
-                    <Button onClick={() => handleRating(2)} variant="outline" className="border-2 border-green-300/50 hover:bg-green-300/20">
-                      Good
-                    </Button>
-                    <Button onClick={() => handleRating(3)} variant="outline" className="border-2 border-yellow-500/50 hover:bg-yellow-500/20">
-                      Medium
-                    </Button>
-                    <Button onClick={() => handleRating(5)} variant="outline" className="border-2 border-red-500/50 hover:bg-red-500/20">
-                      Hard
-                    </Button>
-                  </div>
-                )}
-              </CardFooter>
-            </>
-          ) : (
-            <CardContent className="min-h-[300px] flex items-center justify-center">
-              <p className="text-center text-muted-foreground">
-                No flashcards available. Generate some to start practicing.
-              </p>
-            </CardContent>
-          )}
-        </Card>
+
+      <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="review" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            <span>Study</span>
+            {dueCards.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1">
+                {dueCards.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="schedule" className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4" />
+            <span>Schedule</span>
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            <span>Progress</span>
+          </TabsTrigger>
+        </TabsList>
         
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                Mastery Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Overall mastery</span>
-                  <span>{calculateMasteryPercentage()}%</span>
+        <TabsContent value="review" className="space-y-4">
+          {reviewInProgress ? (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-sm font-medium">
+                    Card {currentCardIndex + 1} of {dueCards.length}
+                  </span>
                 </div>
-                <Progress value={calculateMasteryPercentage()} className="h-2" />
+                <Button variant="ghost" size="sm" onClick={endReviewSession}>
+                  End Session
+                </Button>
               </div>
               
-              <div className="grid grid-cols-3 gap-2 pt-2">
-                <div className="text-center p-2 rounded-md bg-green-500/10">
-                  <div className="text-xl font-bold text-green-500">{stats.mastered}</div>
-                  <div className="text-xs text-muted-foreground">Mastered</div>
+              <Progress value={(currentCardIndex / dueCards.length) * 100} className="h-2" />
+              
+              <Card className="w-full mx-auto max-w-3xl h-[300px] relative perspective">
+                <div 
+                  className={`absolute inset-0 w-full h-full transition-transform duration-500 preserve-3d ${
+                    isFlipped ? "rotate-y-180" : ""
+                  }`}
+                  onClick={handleCardFlip}
+                >
+                  <div className="absolute inset-0 p-6 flex flex-col justify-between backface-hidden">
+                    <CardHeader>
+                      <CardTitle className="text-center">Question</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center text-center">
+                      <p className="text-lg">{dueCards[currentCardIndex]?.question}</p>
+                    </CardContent>
+                    <CardFooter className="flex justify-center text-sm text-muted-foreground">
+                      Click to reveal answer
+                    </CardFooter>
+                  </div>
+                  
+                  <div className="absolute inset-0 p-6 flex flex-col justify-between backface-hidden rotate-y-180">
+                    <CardHeader>
+                      <CardTitle className="text-center">Answer</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center text-center">
+                      <p className="text-lg">{dueCards[currentCardIndex]?.answer}</p>
+                    </CardContent>
+                    <CardFooter className="flex justify-center">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        How well did you remember this?
+                      </p>
+                    </CardFooter>
+                  </div>
                 </div>
-                <div className="text-center p-2 rounded-md bg-yellow-500/10">
-                  <div className="text-xl font-bold text-yellow-500">{stats.learning}</div>
-                  <div className="text-xs text-muted-foreground">Learning</div>
+              </Card>
+              
+              {isFlipped && (
+                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
+                    onClick={() => handleCardReview(0)}
+                  >
+                    Not at all
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500"
+                    onClick={() => handleCardReview(2)}
+                  >
+                    With difficulty
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500"
+                    onClick={() => handleCardReview(3)}
+                  >
+                    After hesitation
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="bg-green-500/10 hover:bg-green-500/20 text-green-500"
+                    onClick={() => handleCardReview(5)}
+                  >
+                    Perfectly
+                  </Button>
                 </div>
-                <div className="text-center p-2 rounded-md bg-red-500/10">
-                  <div className="text-xl font-bold text-red-500">{stats.difficult}</div>
-                  <div className="text-xs text-muted-foreground">Difficult</div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {flashcards.length > 0 ? (
+                <>
+                  <div className="flex flex-col md:flex-row gap-4 items-start">
+                    <Card className="w-full md:w-2/3">
+                      <CardHeader>
+                        <CardTitle className="flex justify-between items-center">
+                          <span>Due for review</span>
+                          <Badge variant="secondary" className="ml-auto">
+                            {dueCards.length} cards
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription>
+                          Cards that need your attention today
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {dueCards.length > 0 ? (
+                          <div className="space-y-2">
+                            {dueCards.slice(0, 3).map((card) => (
+                              <div 
+                                key={card.id} 
+                                className="p-3 border rounded-md flex justify-between items-center"
+                              >
+                                <div className="truncate max-w-[70%]">{card.question}</div>
+                                <Badge variant={
+                                  card.difficultyLevel <= 2 ? "outline" : 
+                                  card.difficultyLevel === 3 ? "secondary" : "default"
+                                }>
+                                  {card.difficultyLevel <= 2 ? "Easy" : 
+                                   card.difficultyLevel === 3 ? "Medium" : "Hard"}
+                                </Badge>
+                              </div>
+                            ))}
+                            {dueCards.length > 3 && (
+                              <p className="text-sm text-muted-foreground text-center">
+                                And {dueCards.length - 3} more cards...
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center p-6">
+                            <p className="text-muted-foreground">
+                              No cards due for review today
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
+                      <CardFooter>
+                        <Button 
+                          className="w-full" 
+                          disabled={dueCards.length === 0}
+                          onClick={startReviewSession}
+                        >
+                          Start Review Session
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    <Card className="w-full md:w-1/3">
+                      <CardHeader>
+                        <CardTitle>Flashcards</CardTitle>
+                        <CardDescription>
+                          You have {flashcards.length} flashcards for this material
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Easy cards</span>
+                            <span className="font-medium">
+                              {flashcards.filter(c => c.difficultyLevel <= 2).length}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Medium cards</span>
+                            <span className="font-medium">
+                              {flashcards.filter(c => c.difficultyLevel === 3).length}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Hard cards</span>
+                            <span className="font-medium">
+                              {flashcards.filter(c => c.difficultyLevel >= 4).length}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-6 border border-dashed rounded-lg space-y-4">
+                  <Brain className="h-12 w-12 text-muted-foreground/50" />
+                  <div className="text-center">
+                    <h3 className="font-medium">No flashcards found</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Generate flashcards to start learning with spaced repetition
+                    </p>
+                  </div>
+                  <Button onClick={handleGenerateFlashcards} disabled={isGenerating}>
+                    {isGenerating ? "Generating..." : "Generate Flashcards"}
+                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-blue-500" />
-                Today's Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  <span>Due for review</span>
+              )}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="schedule" className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-6">
+            <Card className="w-full md:w-1/2">
+              <CardHeader>
+                <CardTitle>Review Calendar</CardTitle>
+                <CardDescription>
+                  Upcoming reviews for {material.name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-6">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="mx-auto"
+                  components={{
+                    DayContent: (props) => {
+                      const count = getDatesWithReviews(props.date);
+                      return (
+                        <div className="relative">
+                          {props.children}
+                          {count > 0 && (
+                            <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                              count < 3 ? 'bg-blue-400' : 
+                              count < 7 ? 'bg-amber-400' : 'bg-red-400'
+                            }`} />
+                          )}
+                        </div>
+                      );
+                    },
+                  }}
+                />
+              </CardContent>
+            </Card>
+            
+            <Card className="w-full md:w-1/2">
+              <CardHeader>
+                <CardTitle>Upcoming Reviews</CardTitle>
+                <CardDescription>
+                  Review schedule for the next 7 days
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {Object.entries(upcomingReviews).length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(upcomingReviews)
+                      .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+                      .slice(0, 7)
+                      .map(([dateStr, count]) => {
+                        const date = new Date(dateStr);
+                        const isToday = new Date().toISOString().split('T')[0] === dateStr;
+                        return (
+                          <div 
+                            key={dateStr} 
+                            className={`p-3 border rounded-md flex justify-between items-center ${
+                              isToday ? 'bg-primary/5 border-primary/30' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`flex flex-col justify-center items-center w-10 h-10 rounded-full ${
+                                isToday ? 'bg-primary/10 text-primary' : 'bg-muted'
+                              }`}>
+                                <span className="text-xs font-medium">{date.toLocaleDateString('en-US', {month: 'short'})}</span>
+                                <span className="text-sm font-bold">{date.getDate()}</span>
+                              </div>
+                              <span className="font-medium">
+                                {isToday ? 'Today' : formatDate(date)}
+                              </span>
+                            </div>
+                            <Badge>
+                              {count} card{count !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No upcoming reviews scheduled</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="stats" className="space-y-4">
+          <div className="flex flex-col gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Learning Progress</CardTitle>
+                <CardDescription>
+                  Your spaced repetition statistics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardHeader className="p-4">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Cards</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-4 pb-4">
+                        <div className="text-2xl font-bold">{flashcards.length}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="p-4">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Cards Mastered</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-4 pb-4">
+                        <div className="text-2xl font-bold">
+                          {flashcards.filter(card => card.repetitionCount >= 3).length}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="p-4">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Review Sessions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-4 pb-4">
+                        <div className="text-2xl font-bold">
+                          {spacedRepetitionService.getSessions().filter(s => s.materialId === material.id).length}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">Card Difficulty Distribution</h4>
+                    <div className="w-full h-6 bg-muted rounded-full overflow-hidden">
+                      {flashcards.length > 0 && (
+                        <div className="flex h-full">
+                          <div 
+                            className="bg-green-500" 
+                            style={{ 
+                              width: `${(flashcards.filter(c => c.difficultyLevel <= 2).length / flashcards.length) * 100}%` 
+                            }}
+                          />
+                          <div 
+                            className="bg-amber-500" 
+                            style={{ 
+                              width: `${(flashcards.filter(c => c.difficultyLevel === 3).length / flashcards.length) * 100}%` 
+                            }}
+                          />
+                          <div 
+                            className="bg-red-500" 
+                            style={{ 
+                              width: `${(flashcards.filter(c => c.difficultyLevel >= 4).length / flashcards.length) * 100}%` 
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Easy</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                        <span>Medium</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                        <span>Hard</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <Badge variant="secondary">{stats.dueToday} cards</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Sessions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {spacedRepetitionService.getSessions()
+                  .filter(s => s.materialId === material.id)
+                  .sort((a, b) => b.date.getTime() - a.date.getTime())
+                  .slice(0, 5)
+                  .map((session) => (
+                    <div 
+                      key={session.id} 
+                      className="flex items-center justify-between p-3 border-b last:border-0"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="bg-primary/10 p-2 rounded-full">
+                          <Clock className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {session.cardsCompleted} cards reviewed
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {session.date.toLocaleDateString()} • {formatDuration(session.duration)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-sm">
+                        {Math.round((session.cardsCompleted / session.totalCards) * 100)}% completed
+                      </div>
+                    </div>
+                  ))}
+                  
+                {spacedRepetitionService.getSessions().filter(s => s.materialId === material.id).length === 0 && (
+                  <div className="text-center py-6">
+                    <p className="text-muted-foreground">No review sessions yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
