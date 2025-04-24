@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,13 +19,15 @@ import {
   X,
   Brain,
   Globe,
-  Volume2
+  Volume2,
+  Edit3
 } from "lucide-react";
 import { StudySession } from '@/services/storageService';
 import { ThemeToggle } from './ThemeToggle';
 import { useTheme } from "next-themes";
 import { toast } from "@/components/ui/sonner";
 import Tutorial from './Tutorial';
+import { Link } from 'react-router-dom';
 
 interface MainLayoutProps {
   activeSession: StudySession | null;
@@ -227,6 +228,26 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                   <span>Text to Speech</span>
                   <span className="ml-auto bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">New</span>
                 </TabsTrigger>
+
+                <Separator className="my-4" />
+                
+                <div className="w-full px-3 py-2 mb-1">
+                  <p className="text-xs font-medium text-muted-foreground">WRITING TOOLS</p>
+                </div>
+
+                <Link 
+                  to="/writing-tools" 
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent transition-colors flex items-center"
+                  onClick={() => {
+                    if (isMobile) {
+                      setIsSidebarCollapsed(true);
+                    }
+                  }}
+                >
+                  <Edit3 className="h-4 w-4" />
+                  <span>Writing Assistant</span>
+                  <span className="ml-auto bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">New</span>
+                </Link>
               </TabsList>
             </Tabs>
             
