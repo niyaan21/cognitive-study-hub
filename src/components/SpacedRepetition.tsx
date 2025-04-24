@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { StudyMaterial } from '@/services/fileProcessorService';
 import { spacedRepetitionService, FlashCard } from '@/services/spacedRepetitionService';
 import { toast } from "@/components/ui/sonner";
 import { Brain, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Loader2, Star, Zap } from "lucide-react";
+import { DayContent } from "react-day-picker";
 
 interface SpacedRepetitionProps {
   material: StudyMaterial | null;
@@ -154,6 +154,21 @@ const SpacedRepetition: React.FC<SpacedRepetitionProps> = ({ material }) => {
   const getDatesWithReviews = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
     return upcomingReviews[dateStr] || 0;
+  };
+
+  const renderDayContent = (day: React.ComponentProps<typeof DayContent>["day"]) => {
+    const count = getDatesWithReviews(day);
+    return (
+      <div className="relative">
+        <div>{day.getDate()}</div>
+        {count > 0 && (
+          <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+            count < 3 ? 'bg-blue-400' : 
+            count < 7 ? 'bg-amber-400' : 'bg-red-400'
+          }`} />
+        )}
+      </div>
+    );
   };
 
   if (!material) {
@@ -426,11 +441,11 @@ const SpacedRepetition: React.FC<SpacedRepetitionProps> = ({ material }) => {
                   onSelect={setSelectedDate}
                   className="mx-auto"
                   components={{
-                    DayContent: (props) => {
-                      const count = getDatesWithReviews(props.date);
+                    DayContent: ({ day, ...props }) => {
+                      const count = getDatesWithReviews(day);
                       return (
                         <div className="relative">
-                          {props.children}
+                          {day.getDate()}
                           {count > 0 && (
                             <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
                               count < 3 ? 'bg-blue-400' : 

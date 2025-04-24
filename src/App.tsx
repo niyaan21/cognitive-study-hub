@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+// Create the QueryClient outside of the component to avoid hooks issues
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -18,22 +20,24 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <TooltipProvider delayDuration={300}>
-        <div className="min-h-screen bg-background font-sans antialiased">
-          <Toaster />
-          <Sonner position="bottom-right" closeButton richColors />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </div>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <TooltipProvider delayDuration={300}>
+          <div className="min-h-screen bg-background font-sans antialiased">
+            <Toaster />
+            <Sonner position="bottom-right" closeButton richColors />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </div>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;
