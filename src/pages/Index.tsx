@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import ApiKeySetup from '@/components/ApiKeySetup';
 import MainLayout from '@/components/MainLayout';
@@ -11,6 +12,7 @@ import SpacedRepetition from '@/components/SpacedRepetition';
 import Translation from '@/components/Translation';
 import ImageOcr from '@/components/ImageOcr';
 import Summarize from '@/components/Summarize';
+import TextToSpeech from '@/components/TextToSpeech';
 import { openRouterService } from '@/services/openRouterService';
 import { storageService, StudySession } from '@/services/storageService';
 import { StudyMaterial } from '@/services/fileProcessorService';
@@ -238,6 +240,36 @@ const Index = () => {
             </div>
             <div className="mt-8">
               <Summarize material={activeMaterial} />
+            </div>
+          </div>
+        );
+
+      case 'translate':
+        return (
+          <div className={contentClasses}>
+            <div className="max-w-2xl space-y-2">
+              <h1 className={headingClasses}>Translate Content</h1>
+              <p className={descriptionClasses}>
+                Translate study materials into different languages with AI assistance.
+              </p>
+            </div>
+            <div className="mt-8">
+              <Translation />
+            </div>
+          </div>
+        );
+
+      case 'text-to-speech':
+        return (
+          <div className={contentClasses}>
+            <div className="max-w-2xl space-y-2">
+              <h1 className={headingClasses}>Text to Speech</h1>
+              <p className={descriptionClasses}>
+                Convert your study materials to audio for auditory learning.
+              </p>
+            </div>
+            <div className="mt-8">
+              <TextToSpeech initialText={activeMaterial?.content ? activeMaterial.content.substring(0, 1000) : ""} />
             </div>
           </div>
         );

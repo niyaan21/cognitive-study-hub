@@ -19,6 +19,8 @@ import {
   Book,
   X,
   Brain,
+  Globe,
+  Volume2
 } from "lucide-react";
 import { StudySession } from '@/services/storageService';
 import { ThemeToggle } from './ThemeToggle';
@@ -207,6 +209,23 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 >
                   <ArrowDown className="h-4 w-4" />
                   <span>Summarize</span>
+                </TabsTrigger>
+
+                <TabsTrigger 
+                  value="translate" 
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span>Translate</span>
+                </TabsTrigger>
+
+                <TabsTrigger 
+                  value="text-to-speech" 
+                  className="w-full justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  <Volume2 className="h-4 w-4" />
+                  <span>Text to Speech</span>
+                  <span className="ml-auto bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">New</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
