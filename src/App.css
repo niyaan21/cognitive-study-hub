@@ -1,0 +1,21 @@
+
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  @apply bg-primary/20;
+}
+
+/* Smooth scrolling for the whole app */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Basic transitions for theme changes */
+.transition-theme {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
