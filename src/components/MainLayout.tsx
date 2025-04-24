@@ -41,17 +41,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     <div className="min-h-screen bg-background transition-colors duration-300">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between px-4 md:px-6">
+        <div className="container flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-2 md:gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="md:hidden"
+              className="flex lg:hidden items-center justify-center"
+              aria-label="Toggle sidebar"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="flex items-center gap-2 text-xl md:text-2xl font-bold tracking-tight">
+            <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
               <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent hidden sm:inline-block">
                 AI Study Hub
@@ -63,7 +64,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             {activeSession && (
-              <Badge variant="secondary" className="hidden md:flex px-4 py-1 text-sm">
+              <Badge variant="secondary" className="hidden md:flex">
                 {activeSession.name}
               </Badge>
             )}
@@ -75,9 +76,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       {/* Main Content */}
       <div className="flex min-h-[calc(100vh-3.5rem)] relative">
         {/* Sidebar */}
-        <aside className={`fixed inset-y-14 left-0 z-30 w-64 transform transition-transform duration-300 lg:relative lg:inset-y-0 lg:translate-x-0 ${
-          isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0'
-        } border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
+        <aside 
+          className={`fixed inset-y-14 left-0 z-30 w-64 transform transition-transform duration-300 lg:relative lg:inset-y-0 ${
+            isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0'
+          } lg:translate-x-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}
+        >
           <ScrollArea className="h-full py-6 pl-4 pr-2">
             <Tabs
               defaultValue={activeTab}
@@ -158,22 +161,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </aside>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto">
-          <div className="container px-4 py-6 md:px-6 md:py-8">
-            <div className="rounded-lg border bg-card p-4 md:p-6">
+        <main className="flex-1 overflow-hidden">
+          <div className="container h-full px-4 py-6 lg:px-8">
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 md:p-6 animate-in fade-in-50">
               {children}
             </div>
           </div>
         </main>
-      </div>
 
-      {/* Mobile Overlay */}
-      {!isSidebarCollapsed && !isMobile && (
-        <div
-          className="fixed inset-0 z-20 bg-background/80 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsSidebarCollapsed(true)}
-        />
-      )}
+        {/* Mobile Overlay */}
+        {!isSidebarCollapsed && isMobile && (
+          <div
+            className="fixed inset-0 z-20 bg-background/80 backdrop-blur-sm lg:hidden"
+            onClick={() => setIsSidebarCollapsed(true)}
+          />
+        )}
+      </div>
     </div>
   );
 };
