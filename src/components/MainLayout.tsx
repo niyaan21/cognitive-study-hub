@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +22,7 @@ import { StudySession } from '@/services/storageService';
 import { ThemeToggle } from './ThemeToggle';
 import { useTheme } from "next-themes";
 import { toast } from "@/components/ui/sonner";
+import Tutorial from './Tutorial';
 
 interface MainLayoutProps {
   activeSession: StudySession | null;
@@ -38,10 +38,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   activeTab,
 }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = React.useState(false);
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   
-  // Welcome toast when component mounts
   useEffect(() => {
     const hasShownWelcome = localStorage.getItem('hasShownWelcomeToast');
     if (!hasShownWelcome) {
@@ -59,9 +59,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  const handleTutorialClick = () => {
+    setIsTutorialOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background transition-colors duration-300 animate-in">
-      {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2 md:gap-4">
@@ -98,9 +101,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="flex min-h-[calc(100vh-4rem)] relative">
-        {/* Sidebar */}
         <aside 
           className={`fixed inset-y-16 left-0 z-30 w-72 transform transition-all duration-300 ease-in-out lg:relative lg:inset-y-0 ${
             isSidebarCollapsed ? '-translate-x-full' : 'translate-x-0'
@@ -201,7 +202,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             </Tabs>
             
             <div className="mt-6 px-3">
-              <div className="rounded-lg border bg-card p-4 shadow-sm">
+              <div className="rounded-lg border bg-card p-4 shadow-sm hover:border-primary/20 transition-colors cursor-pointer" onClick={handleTutorialClick}>
                 <h4 className="text-sm font-semibold mb-1">Need Help?</h4>
                 <p className="text-xs text-muted-foreground mb-3">Get assistance with study tools</p>
                 <Button variant="outline" size="sm" className="w-full text-xs">
@@ -212,7 +213,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </ScrollArea>
         </aside>
 
-        {/* Content Area */}
         <main className="flex-1 overflow-hidden">
           <div className="container h-full px-4 py-6 lg:px-8 transition-all duration-300">
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 md:p-6 animate-in fade-in">
@@ -221,7 +221,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </div>
         </main>
 
-        {/* Mobile Overlay */}
         {!isSidebarCollapsed && isMobile && (
           <div
             className="fixed inset-0 z-20 bg-background/80 backdrop-blur-sm lg:hidden"
