@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import WritingTools from "./pages/WritingTools";
 import NotFound from "./pages/NotFound";
 
 // Create the QueryClient outside of the component to avoid hooks issues
@@ -30,6 +31,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/writing-tools" element={<WritingTools />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

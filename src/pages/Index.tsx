@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import ApiKeySetup from '@/components/ApiKeySetup';
 import MainLayout from '@/components/MainLayout';
 import FileUploader from '@/components/FileUploader';
@@ -13,9 +13,11 @@ import Translation from '@/components/Translation';
 import ImageOcr from '@/components/ImageOcr';
 import Summarize from '@/components/Summarize';
 import TextToSpeech from '@/components/TextToSpeech';
+import { Button } from '@/components/ui/button';
 import { openRouterService } from '@/services/openRouterService';
 import { storageService, StudySession } from '@/services/storageService';
 import { StudyMaterial } from '@/services/fileProcessorService';
+import { FileText } from 'lucide-react';
 
 const Index = () => {
   const [isApiKeySet, setIsApiKeySet] = useState(false);
@@ -106,10 +108,22 @@ const Index = () => {
     const headingClasses = "text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent";
     const descriptionClasses = "text-muted-foreground text-lg leading-relaxed";
 
+    const writingToolsLink = (
+      <div className="mb-4 flex justify-end">
+        <Link to="/writing-tools">
+          <Button variant="outline" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Writing Tools
+          </Button>
+        </Link>
+      </div>
+    );
+
     switch (tab) {
       case 'upload':
         return (
           <div className={contentClasses}>
+            {writingToolsLink}
             <div className="max-w-2xl space-y-2">
               <h1 className={headingClasses}>Upload Study Material</h1>
               <p className={descriptionClasses}>
