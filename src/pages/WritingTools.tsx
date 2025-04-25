@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import GrammarChecker from '@/components/writing/GrammarChecker';
 import EssayCoach from '@/components/writing/EssayCoach';
 import AiDetector from '@/components/writing/AiDetector';
@@ -11,33 +14,44 @@ import WritingDashboard from '@/components/writing/WritingDashboard';
 
 const WritingTools = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
 
   return (
     <div className="container mx-auto p-6 space-y-8 max-w-7xl">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent">
-          Writing Tools
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Comprehensive suite of writing assistants, checkers, and generators
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent">
+            Writing Tools
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Comprehensive suite of writing assistants, checkers, and generators
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 hover:scale-105 transition-transform duration-200"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Hub</span>
+        </Button>
       </div>
 
       <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2">
           <TabsTrigger value="dashboard" className="text-xs md:text-sm">Dashboard</TabsTrigger>
           <TabsTrigger value="essay-coach" className="text-xs md:text-sm">Essay Coach</TabsTrigger>
-          <TabsTrigger value="grammar" className="text-xs md:text-sm">Grammar</TabsTrigger>
+          <TabsTrigger value="grammar" className="text-xs md:text-sm">Grammar Check</TabsTrigger>
           <TabsTrigger value="ai-detector" className="text-xs md:text-sm">AI Detector</TabsTrigger>
           <TabsTrigger value="humanizer" className="text-xs md:text-sm">Humanizer</TabsTrigger>
           <TabsTrigger value="exam-generator" className="text-xs md:text-sm">Exam Generator</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="dashboard" className="space-y-4">
+        <TabsContent value="dashboard" className="space-y-4 animate-fade-in">
           <WritingDashboard />
         </TabsContent>
         
-        <TabsContent value="essay-coach" className="space-y-4">
+        <TabsContent value="essay-coach" className="space-y-4 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle>Essay Writing Coach</CardTitle>
@@ -49,7 +63,7 @@ const WritingTools = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="grammar" className="space-y-4">
+        <TabsContent value="grammar" className="space-y-4 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle>Grammar Checker</CardTitle>
@@ -61,7 +75,7 @@ const WritingTools = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="ai-detector" className="space-y-4">
+        <TabsContent value="ai-detector" className="space-y-4 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle>AI Detection</CardTitle>
@@ -73,7 +87,7 @@ const WritingTools = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="humanizer" className="space-y-4">
+        <TabsContent value="humanizer" className="space-y-4 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle>Text Humanizer</CardTitle>
@@ -85,7 +99,7 @@ const WritingTools = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="exam-generator" className="space-y-4">
+        <TabsContent value="exam-generator" className="space-y-4 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle>Exam Paper Generator</CardTitle>
