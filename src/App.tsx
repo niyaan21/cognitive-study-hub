@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -97,10 +96,15 @@ const App = () => (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider 
+          attribute="class" 
+          defaultTheme="system" 
+          enableSystem 
+          disableTransitionOnChange
+        >
           <TooltipProvider delayDuration={300}>
             <AuthProvider>
-              <div className="min-h-screen bg-background font-sans antialiased">
+              <div className="min-h-screen bg-background font-sans antialiased transition-colors duration-300">
                 <Toaster />
                 <Sonner position="bottom-right" closeButton richColors />
                 <AppRoutes />
